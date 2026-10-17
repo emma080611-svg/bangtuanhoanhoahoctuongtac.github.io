@@ -1,0 +1,87 @@
+const grid=document.getElementById("grid");
+E.forEach(e=>{
+ const[r,c]=pos(e.z);const d=document.createElement("div");
+ d.className="el c-"+e.c+" b-"+blk(e);d.style.gridRow=r;d.style.gridColumn=c;d.dataset.z=e.z;
+ d.innerHTML=`<small><span>${e.z}</span><span>${fm(e)}</span></small><div class='sy'><b>${e.s}</b><em class='en'>${EN[e.z-1]}</em></div><i>${VN[e.z-1]}</i><div class='cf'>${cfg(e.z)}</div><div class='ox'>${OX[e.z-1]||'&nbsp;'}</div>`;
+ d.onclick=()=>openM(e);grid.appendChild(d);});
+// ô chú thích phân nhóm La–Lu, Ac–Lr
+[["*",6,3],["*",7,3]].forEach(([t,r,c])=>{const d=document.createElement("div");d.style.cssText=`grid-row:${r};grid-column:${c};text-align:center;color:var(--mu)`;d.textContent=t;grid.appendChild(d)});
+
+// bộ lọc
+let cur=null;const chips=document.getElementById("chips");
+Object.entries(CATS).forEach(([k,v])=>{const b=document.createElement("button");b.className="chip";b.textContent=v;b.onclick=()=>{cur=cur==k?null:k;filter()};b.dataset.k=k;chips.appendChild(b)});
+document.getElementById("q").oninput=filter;
+function filter(){
+ const t=document.getElementById("q").value.trim().toLowerCase();
+ chips.querySelectorAll(".chip").forEach(b=>b.classList.toggle("on",b.dataset.k==cur));
+ grid.querySelectorAll(".el").forEach(d=>{const e=E[d.dataset.z-1];
+  const okT=!t||e.s.toLowerCase()==t||(e.n+' '+VN[e.z-1]).toLowerCase().includes(t)||String(e.z)==t;
+  d.classList.toggle("dim",!(okT&&(!cur||e.c==cur)))});}
+
+// cấu hình electron theo từng lớp
+function shells(z){if(EXC[z]){const r=shX(z);if(r)return r}
+ const ord=[[1,2],[2,2],[2,6],[3,2],[3,6],[4,2],[3,10],[4,6],[5,2],[4,10],[5,6],[6,2],[4,14],[5,10],[6,6],[7,2],[5,14],[6,10],[7,6]];
+ const s=[];let left=z;for(const[n,cap]of ord){if(left<=0)break;const t=Math.min(cap,left);s[n-1]=(s[n-1]||0)+t;left-=t}
+ return s.map(v=>v||0);}
+function bohr(e){
+ const sh=shells(e.z);let g=`<circle r="14" fill="#ff8a1f"/><text y="4" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">${e.z}+</text>`;
+ sh.forEach((n,i)=>{const R=26+i*16;const dur=6+i*3;
+  g+=`<circle r="${R}" fill="none" stroke="#8aa9d8" stroke-dasharray="3 3"/><g><animateTransform attributeName="transform" type="rotate" from="0" to="${i%2?-360:360}" dur="${dur}s" repeatCount="indefinite"/>`;
+  for(let k=0;k<n;k++){const a=2*Math.PI*k/n;g+=`<circle cx="${(R*Math.cos(a)).toFixed(1)}" cy="${(R*Math.sin(a)).toFixed(1)}" r="3.2" fill="${i==sh.length-1?'#e53935':'#2f7bff'}"/>`}
+  g+="</g>"});
+ const W=26+sh.length*16+10;
+ return `<svg viewBox="${-W} ${-W} ${2*W} ${2*W}" style="width:100%;max-width:300px;display:block;margin:auto">${g}</svg><p style="text-align:center;margin:6px 0 0">Cấu hình lớp: <b>${sh.join(" – ")}</b> (electron mỗi lớp)</p>`;}
+
+// Gắn video YouTube cụ thể cho từng nguyên tố: ký hiệu → đường dẫn video
+const VIDEOS={
+ H:"https://www.youtube.com/watch?v=WkQVUNE9krg",
+ He:"https://www.youtube.com/watch?v=jDmBLMPxNc4",
+ Li:"https://www.youtube.com/watch?v=KPpnAnyoLH0",
+ Be:"https://www.youtube.com/watch?v=Bjb-9CO1-3M",
+ Na:"https://www.youtube.com/watch?v=TcnVYTyT4LE",
+ C:"https://www.youtube.com/watch?v=wFlaadb_guk",
+ N:"https://www.youtube.com/watch?v=01-n87e3gRE",
+ Al:"https://www.youtube.com/watch?v=MWDZtm8smOU",
+ Cu:"https://www.youtube.com/watch?v=C99ynyOrwPg",
+ Ti:"https://www.youtube.com/watch?v=6RJl2_-LVvU",
+ Mg:"https://www.youtube.com/watch?v=vkQx-YkSRMM",
+ Cl:"https://www.youtube.com/watch?v=s-VmrU826x0",
+ O:"https://www.youtube.com/watch?v=0EzSaeMFJuQ",
+ B:"https://www.youtube.com/watch?v=DzbpRqRkcnQ",
+ F:"https://www.youtube.com/watch?v=bk_VbIj7YEA",
+};
+let E0=null;
+const TABS=[["🎬","Video 30–60 giây"],["🖼️","Hình ảnh ứng dụng"],["⚛️","Mô hình nguyên tử"],["🧪","Thí nghiệm"],["❓","Câu hỏi tương tác"]];
+function openM(e){
+ E0=e;const col=getComputedStyle(grid.querySelector(`[data-z="${e.z}"]`)).backgroundColor;
+ const big=document.getElementById("big");big.style.background=col;
+ big.innerHTML=`<div class="n">${e.z}</div><div class="s">${e.s}</div><div class="nm">${VN[e.z-1]}</div><div style='font-size:11px;margin-bottom:4px'>${cfg(e.z)}</div><div class="m">${e.m}</div><div id="qr"></div><div class="hint">Quét QR để học thêm</div>`;
+ try{new QRCode(document.getElementById("qr"),{text:"https://en.wikipedia.org/wiki/"+e.n,width:96,height:96,correctLevel:QRCode.CorrectLevel.M})}catch(_){document.getElementById("qr").textContent="QR"}
+ const tb=document.getElementById("tabs");tb.innerHTML="";
+ TABS.forEach((t,i)=>{const b=document.createElement("button");b.className="tab";b.innerHTML=`<em>${t[0]}</em>${t[1]}`;b.onclick=()=>tab(i);tb.appendChild(b)});
+ document.getElementById("ov").classList.add("show");tab(4);}
+function closeM(){document.getElementById("ov").classList.remove("show")}
+document.getElementById("ov").onclick=ev=>{if(ev.target.id=="ov")closeM()};
+document.addEventListener("keydown",ev=>{if(ev.key=="Escape")closeM()});
+
+function quizOf(e){
+ const I=INFO[e.s];if(I)return I.q;
+ const w=[e.z+1,e.z-1>0?e.z-1:e.z+3,e.z+5].map(String);
+ const o=[String(e.z),...w];
+ return{q:`Số hiệu nguyên tử của ${e.n} (${e.s}) là bao nhiêu?`,o,a:0,e:`${e.n} có số hiệu nguyên tử ${e.z}, nghĩa là có ${e.z} proton trong hạt nhân.`};}
+
+function tab(i){
+ const e=E0,I=INFO[e.s]||{};
+ document.querySelectorAll(".tab").forEach((b,k)=>b.classList.toggle("on",k==i));
+ const p=document.getElementById("pane");
+ if(i==0){p.innerHTML=`<a class="vid" target="_blank" rel="noopener" href="${VIDEOS[e.s]||"https://www.youtube.com/results?hl=vi&search_query="+encodeURIComponent(VN[e.z-1]+" nguyên tố hoá học tiếng Việt 1 phút")}"><span>▶</span><b>Video ${VN[e.z-1]} trong 60 giây</b><small>${VIDEOS[e.s]?"Bấm để xem video trên YouTube":"Chưa gắn video riêng, bấm để tìm video tiếng Việt trên YouTube"}</small></a>`}
+ if(i==1){return appTab(e,I,p)}if(false){const a=I.app||GEN[e.c];
+  p.innerHTML=`<div class="apps">${a.map(x=>`<div><b>${x[2]?`<img src='${x[2]}' alt='' style='width:100%;height:90px;object-fit:cover;border-radius:8px'>`:x[0]}</b>${vi(x[1])}</div>`).join("")}</div>`+(I.app?"":`<p style="color:var(--mu);font-size:12px">Nội dung chung. Hãy bổ sung ứng dụng thực tế của ${e.n} trong đối tượng INFO.</p>`)}
+ if(i==2){p.innerHTML=bohr(e)+atomInfo(e)}
+ if(i==3){p.innerHTML=`<b>Thí nghiệm gợi ý</b><p>${vi(I.exp||EXPG[e.c])}</p>`}
+ if(i==4){return quiz(e,p)}if(false){const q=quizOf(e);
+  p.innerHTML=`<b>${q.q}</b>`+q.o.map((t,k)=>`<button class="opt" data-k="${k}">${String.fromCharCode(65+k)}. ${t}</button>`).join("")+`<div class="ex" id="ex" style="display:none"></div>`;
+  p.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+   p.querySelectorAll(".opt").forEach(x=>{x.disabled=true;const k=+x.dataset.k;if(k==q.a)x.classList.add("ok");else if(x==b)x.classList.add("no")});
+   const ex=document.getElementById("ex");ex.style.display="block";ex.textContent=(+b.dataset.k==q.a?"✅ Chính xác! ":"❌ Chưa đúng. ")+q.e});}
+}
